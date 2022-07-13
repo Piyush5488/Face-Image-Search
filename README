@@ -1,0 +1,74 @@
+Instruction to Run and Build the program
+
+First of all there are 4 configuration variable in the top of the main.py file
+You need the change the values of these variables according to your postgresql settings in your local machine
+
+EG:
+    host = "localhost" ( This would be same for everyone )
+    database="faceimage" ( Name of the data base )
+    user="postgres" ( User )
+    password="qwerty" ( Password for the user )
+
+Whatever name of the database you keep you have to create that
+    Use this command in your psql command prompt : CREATE DATABASE faceimage;
+
+Once you have created the database connect to it using '\c faceimage'
+
+Now you have to create a table inside this database
+    The command for creating the table is given below :
+    CREATE TABLE face_images (
+        id serial PRIMARY KEY,
+        name VARCHAR NOT NULL,
+        date VARCHAR NOT NULL,
+        location VARCHAR NOT NULL,
+        imageUrl VARCHAR NOT NULL
+    );
+
+Required input parameters and details about the api end points
+
+@app.post("/search_faces/")
+async def search_faces(image: UploadFile = File(..., description = "An image file, possible containing multiple human faces."), strictness: str = Form(...),k: str = Form(...)):
+
+       image : It is the image file
+       Strictness : Ranges from [0,1] , lesser the value of strictness the filter will be tight, lesser images will match
+       k : Best k matches ( if there are atlest k ) will be return in the response
+
+
+@app.post("/add_face/")
+async def add_face(image: UploadFile = File(..., description="An image file having a single human face.")):
+
+       image : the image file you want to add to the dataset
+Note : When you add an image, it is entered in the database with a unique key, and its name is temporarily assigned to filename
+       An end point to update metadeta is given, so metadeta can be updated afterwords
+
+@app.post("/add_faces_in_bulk/")
+async def add_faces_in_bulk(file: UploadFile = File(..., description="A ZIP file containing multiple face images.")):
+
+        file : Zip file of images ( This zip should only contains images and in jpg format )
+Note : When you add these images, they are entered in the database with a unique key, and its name is temporarily assigned to filename
+       An end point to update metadeta is given, so metadeta can be updated afterwords
+
+
+@app.post("/get_face_info/")
+async def get_face_info(face_id: str = Form(...)):
+
+        face_id : It is the unique id ( Primary key of the table face_image )
+                  ( face_id must already present in the table )
+
+@app.post("/add_metadata")
+async def add_metadata(id: str = Form(...),name: str = Form(...),date: str = Form(...),location: str = Form(...)):
+
+        name : Name of the Person in the image
+        date : date on which image was taken
+        location : location at which image was clicked
+        id = The id ( primary key of the table) of the image you want to update metadeta
+        ( ALl inputs should be given in string format )
+
+OTHER IMPORTANT NOTES
+1) For large inputs ( Like LFW Dataset ) The /search_faces/ endpoint will take a long time to respond ( Around 3-4 minutes )
+   So kindly test it with small inputs in the beginning
+2) Never manually use delete operation on the table, I am using the primary key of type serial , so deleting elements might cause issues
+   If you still want to do so, just drop the table and create the table again
+3) You can use postman to send requests or use python code ( As I have used in the test_main.py )
+4) Expected results of assertions in the test_main.py will differ from my code, as it depends on the entries you have added in the dataset
+   So change the expected results of assertions in the test file
